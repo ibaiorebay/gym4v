@@ -25,6 +25,19 @@ class ActivityService
         return $this->entityManager->getRepository(Activity::class)->find($id);
     }
 
+    public function getActivitiesByDate(\DateTime $date): array
+    {
+        $startOfDay = $date->setTime(0, 0, 0);
+        $endOfDay = $date->setTime(23, 59, 59);
+
+        return $this->entityManager->getRepository(Activity::class)->createQueryBuilder('a')
+            ->where('a.dateStart >= :startOfDay AND a.dateStart <= :endOfDay')
+            ->setParameter('startOfDay', $startOfDay)
+            ->setParameter('endOfDay', $endOfDay)
+            ->getQuery()
+            ->getResult();
+    }
+
     public function createActivity(Activity $activity): Activity
     {
         $this->entityManager->persist($activity);
