@@ -98,12 +98,19 @@ class Activity
     public function removeActivityid(ActivityMonitor $activityid): static
     {
         if ($this->activityid->removeElement($activityid)) {
-            // set the owning side to null (unless already changed)
             if ($activityid->getActivity() === $this) {
                 $activityid->setActivity(null);
             }
         }
 
         return $this;
+    }
+
+    public function createMonitor(Monitor $monitor): ActivityMonitor
+    {
+        $activityMonitor = new ActivityMonitor();
+        $activityMonitor->setMonitor($monitor);
+        $activityMonitor->setActivity($this);
+        return $activityMonitor;
     }
 }
