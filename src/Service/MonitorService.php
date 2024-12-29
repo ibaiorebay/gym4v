@@ -2,7 +2,8 @@
 
 namespace App\Service;
 
-use App\Entity\Monitor;
+use app\Model\MonitorDTO as ModelMonitorDTO;
+use App\Models\MonitorDTO;
 use Doctrine\ORM\EntityManagerInterface;
 
 class MonitorService
@@ -16,28 +17,28 @@ class MonitorService
 
     public function getAllMonitors(): array
     {
-        return $this->entityManager->getRepository(Monitor::class)->findAll();
+        return $this->entityManager->getRepository(ModelMonitorDTO::class)->findAll();
     }
 
-    public function getMonitorById(int $id): ?Monitor
+    public function getMonitorById(int $id): ?ModelMonitorDTO
     {
-        return $this->entityManager->getRepository(Monitor::class)->find($id);
+        return $this->entityManager->getRepository(ModelMonitorDTO::class)->find($id);
     }
 
-    public function createMonitor(Monitor $monitor): Monitor
+    public function createMonitor(ModelMonitorDTO $monitor): ModelMonitorDTO
     {
         $this->entityManager->persist($monitor);
         $this->entityManager->flush();
         return $monitor;
     }
 
-    public function updateMonitor(Monitor $monitor): Monitor
+    public function updateMonitor(ModelMonitorDTO $monitor): ModelMonitorDTO
     {
         $this->entityManager->flush();
         return $monitor;
     }
 
-    public function deleteMonitor(Monitor $monitor): void
+    public function deleteMonitor(ModelMonitorDTO $monitor): void
     {
         $this->entityManager->remove($monitor);
         $this->entityManager->flush();
