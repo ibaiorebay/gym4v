@@ -1,42 +1,86 @@
 <?php
 
-namespace App\Models;
-
-use Symfony\Component\Validator\Constraints as Assert;
+namespace app\Model;
+use app\Model\ActivityTypeDTO;
 
 class ActivityDTO
 {
-    #[Assert\NotBlank]
-    #[Assert\Positive]
-    private int $activityTypeId;
+    public int $id;
+    public string $name;
+    public ?\DateTimeInterface $dateStart;
+    public ?\DateTimeInterface $dateEnd;
+    public ActivityTypeDTO $activityType;
+    public array $monitors;
 
-    #[Assert\NotBlank]
-    #[Assert\Count(min: 1)]
-    private array $monitorIds;
-
-    #[Assert\NotBlank]
-    #[Assert\DateTime(format: 'Y-m-d\TH:i:s')]
-    private string $dateStart;
-
-    public function __construct(int $activityTypeId, array $monitorIds, string $dateStart)
+    public function __construct($id, $name, $dateStart, $dateEnd, ActivityTypeDTO $activityType, array $monitors)
     {
-        $this->activityTypeId = $activityTypeId;
-        $this->monitorIds = $monitorIds;
+        $this->id = $id;
+        $this->name = $name;
         $this->dateStart = $dateStart;
+        $this->dateEnd = $dateEnd;
+        $this->activityType = $activityType;
+        $this->monitors = $monitors;
     }
 
-    public function getActivityTypeId(): int
+    public function getId(): int
     {
-        return $this->activityTypeId;
+        return $this->id;
     }
 
-    public function getMonitorIds(): array
+    public function setId(int $id): void
     {
-        return $this->monitorIds;
+        $this->id = $id;
     }
 
-    public function getDateStart(): string
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function getDateStart(): ?\DateTimeInterface
     {
         return $this->dateStart;
     }
+
+    public function setDateStart(?\DateTimeInterface $dateStart): void
+    {
+        $this->dateStart = $dateStart;
+    }
+
+    public function getDateEnd(): ?\DateTimeInterface
+    {
+        return $this->dateEnd;
+    }
+
+    public function setDateEnd(?\DateTimeInterface $dateEnd): void
+    {
+        $this->dateEnd = $dateEnd;
+    }
+
+    public function getActivityType(): ActivityTypeDTO
+    {
+        return $this->activityType;
+    }
+
+    public function setActivityType(ActivityTypeDTO $activityType): void
+    {
+        $this->activityType = $activityType;
+    }
+
+    public function getMonitors(): array
+    {
+        return $this->monitors;
+    }
+
+    public function setMonitors(array $monitors): void
+    {
+        $this->monitors = $monitors;
+    }
+
 }
+

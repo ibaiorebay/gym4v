@@ -116,4 +116,60 @@ class ActivityController extends AbstractController
             return $this->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
+
+    #[Route('/activities/{id}', methods: ['PUT'])]
+    public function updateActivity(
+        int $id,
+        Request $request,
+        ValidatorInterface $validator
+    ): JsonResponse {
+        // Buscar la actividad existente
+        $activity = $this->activityService->getActivityById($id);
+        if (!$activity) {
+            return $this->json(['error' => 'Activity not found'], 404);
+        }
+
+        // Decodificar los datos de la solicitud
+        $data = json_decode($request->getContent(), true);
+
+        // Actualizar los campos de la actividad
+        $activity->setName($data['name'] ?? $activity->getName());
+        $activity->setDescription($data['description'] ?? $activity->getDescription());
+        $activity->setLocation($data['location'] ?? $activity->getLocation());
+        $activity->setNumberMonitors($data['numberMonitors'] ?? $activity->getNumberMonitors());
+        $activity->setActivityTypeId($data['activityTypeId'] ?? $activity->getActivityTypeId());
+
+        // Validar los datos actualizados
+        $errors = $validator->validate($activity);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[] = [
+                    'field' => $error->getPropertyPath(),
+                    'message' => $error->getMessage(),
+                ];
+            }
+            return $this->json(['errors' => $errorMessages], 400);
+        }
+
+        // Guardar los cambios
+        $this->activityService->updateActivity($activity);
+
+        return $this->json($activity);
+    }
+
+    #[Route('/activities/{id}', methods: ['DELETE'])]
+    public function deleteActivity(int $id): JsonResponse
+    {
+        // Buscar la actividad existente
+        $activity = $this->activityService->getActivityById($id);
+        if (!$activity) {
+            return $this->json(['error' => 'Activity not found'], 404);
+        }
+
+        // Eliminar la actividad
+        $this->activityService->deleteActivity($activity);
+
+        return $this->json(['message' => 'Activity deleted successfully'], 204);
+    }
 }
