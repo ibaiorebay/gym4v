@@ -21,7 +21,7 @@ class MonitorController extends AbstractController
     {}
 
     #[Route('/monitor', name: 'app_monitor')]
-    public function GetAllMonitors(): Response
+    public function GetAllMonitor(): Response
     {
         return $this->json($this->monitorService->getAllMonitors());
     }
@@ -41,7 +41,7 @@ class MonitorController extends AbstractController
     }
 
     #[Route('/monitors/{id}', methods: ['PUT'])]
-    public function update(
+    public function updateMonitor(
         int $id,
         Request $request,
         ValidatorInterface $validator
@@ -78,5 +78,20 @@ class MonitorController extends AbstractController
         $this->monitorService->updateMonitor($monitor);
 
         return $this->json($monitor);
+    }
+
+    #[Route('/monitors/{id}', methods: ['DELETE'])]
+    public function deleteMonitor(int $id): JsonResponse
+    {
+        // Buscar el monitor existente
+        $monitor = $this->monitorService->getMonitorById($id);
+        if (!$monitor) {
+            return $this->json(['error' => 'Monitor not found'], 404);
+        }
+
+        // Eliminar el monitor
+        $this->monitorService->deleteMonitor($monitor);
+
+        return $this->json(['message' => 'Monitor deleted successfully'], 204);
     }
 }
