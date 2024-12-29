@@ -86,7 +86,7 @@ class ActivityController extends AbstractController
             // Validar y convertir la fecha de inicio
             $dateStart = \DateTime::createFromFormat('Y-m-d\TH:i:s', $activityDTO->getDateStart());
             if (!$dateStart) {
-                return $this->json(['error' => 'Invalid date format. Use ISO 8601 format: YYYY-MM-DDTHH:MM:SS.'], 400);
+                return $this->json(['error' => 'Invalid date format. Use format: YYYY-MM-DDTHH:MM:SS.'], 400);
             }
 
             $validStartTimes = ['09:00', '13:30', '17:30'];
