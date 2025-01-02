@@ -9,7 +9,8 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use app\Models\ActivityDTO;
+use App\Model\ActivityDTO;
+use App\Model\ActivityTypeDTO;
 use App\Entity\Activity;
 use App\Entity\ActivityType;
 use App\Entity\Monitor;
@@ -19,28 +20,29 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class ActivityController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
-    public function __construct(private LoggerInterface $logger, private ActivityService $activityService) {}
+
+    public function __construct(
+        private LoggerInterface $logger,
+        private ActivityService $activityService,
+        EntityManagerInterface $entityManager
+    ) {
+        $this->entityManager = $entityManager;
+    }
+
     #[Route('/activities', methods: ['GET'])]
     public function getAllActivities(Request $request): JsonResponse
     {
-        // Obtener el parámetro de fecha del query string
         $date = $request->query->get('date');
 
         try {
-            if ($date) {
-                // Validar formato de la fecha
-                $dateObject = \DateTime::createFromFormat('d-m-Y', $date);
-                if (!$dateObject || $dateObject->format('d-m-Y') !== $date) {
-                    return $this->json(['error' => 'Invalid date format. Use dd-MM-yyyy.'], 400);
-                }
-                // Obtener actividades por fecha
-                $activities = $this->activityService->getActivitiesByDate($dateObject);
-            } else {
-                // Obtener todas las actividades
-                $activities = $this->activityService->getAllActivities();
-            }
+            $activities = $date
+                ? $this->activityService->getActivitiesByDate(new \DateTime($date))
+                : $this->activityService->getAllActivities();
 
-            return $this->json($activities);
+            // Mapear entidades a DTO
+            $activityDTOs = array_map([$this, 'mapEntityToDTO'], $activities);
+
+            return $this->json($activityDTOs);
         } catch (\Exception $e) {
             return $this->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -52,53 +54,29 @@ class ActivityController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         try {
-            // Crear el DTO y validarlo
-            $activityDTO = new ActivityDTO(
-                $data['activityTypeId'] ?? null,
-                $data['monitorIds'] ?? [],
-                $data['dateStart'] ?? ''
-            );
+            // Validar y crear DTO
+            $activityType = $this->entityManager->getRepository(ActivityType::class)
+                ->find($data['activityTypeId'] ?? null);
 
-            $errors = $validator->validate($activityDTO);
-            if (count($errors) > 0) {
-                $errorMessages = [];
-                foreach ($errors as $error) {
-                    $errorMessages[] = [
-                        'field' => $error->getPropertyPath(),
-                        'message' => $error->getMessage(),
-                    ];
-                }
-                return $this->json(['errors' => $errorMessages], 400);
-            }
-
-            // Obtener el tipo de actividad
-            $activityType = $this->entityManager->getRepository(ActivityType::class)->find($activityDTO->getActivityTypeId());
             if (!$activityType) {
                 return $this->json(['error' => 'Activity type not found.'], 404);
             }
 
-            // Validar los monitores
-            $monitors = $this->entityManager->getRepository(Monitor::class)->findBy(['id' => $activityDTO->getMonitorIds()]);
+            $monitors = $this->entityManager->getRepository(Monitor::class)
+                ->findBy(['id' => $data['monitorIds'] ?? []]);
+
             if (count($monitors) < $activityType->getNumberMonitors()) {
                 return $this->json(['error' => 'Not enough monitors assigned for this activity type.'], 400);
             }
 
-            // Validar y convertir la fecha de inicio
-            $dateStart = \DateTime::createFromFormat('Y-m-d\TH:i:s', $activityDTO->getDateStart());
+            $dateStart = \DateTime::createFromFormat('Y-m-d\TH:i:s', $data['dateStart']);
             if (!$dateStart) {
                 return $this->json(['error' => 'Invalid date format. Use format: YYYY-MM-DDTHH:MM:SS.'], 400);
             }
 
-            $validStartTimes = ['09:00', '13:30', '17:30'];
-            if (!in_array($dateStart->format('H:i'), $validStartTimes)) {
-                return $this->json(['error' => 'Invalid start time. Allowed times are 09:00, 13:30, or 17:30.'], 400);
-            }
+            $dateEnd = (clone $dateStart)->modify('+90 minutes');
 
-            // Calcular la fecha de fin
-            $dateEnd = clone $dateStart;
-            $dateEnd->modify('+90 minutes');
-
-            // Crear la actividad
+            // Crear entidad y persistirla
             $activity = new Activity();
             $activity->setActivityType($activityType);
             $activity->setDateStart($dateStart);
@@ -108,68 +86,95 @@ class ActivityController extends AbstractController
                 $activity->createMonitor($monitor);
             }
 
-            // Guardar la actividad
             $this->activityService->createActivity($activity);
 
-            return $this->json($activity, 201);
+            return $this->json($this->mapEntityToDTO($activity), 201);
         } catch (\Exception $e) {
             return $this->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
 
     #[Route('/activities/{id}', methods: ['PUT'])]
-    public function updateActivity(
-        int $id,
-        Request $request,
-        ValidatorInterface $validator
-    ): JsonResponse {
-        // Buscar la actividad existente
+    public function updateActivity(int $id, Request $request): JsonResponse
+    {
         $activity = $this->activityService->getActivityById($id);
         if (!$activity) {
             return $this->json(['error' => 'Activity not found'], 404);
         }
 
-        // Decodificar los datos de la solicitud
         $data = json_decode($request->getContent(), true);
 
-        // Actualizar los campos de la actividad
-        $activity->setName($data['name'] ?? $activity->getName());
-        $activity->setDescription($data['description'] ?? $activity->getDescription());
-        $activity->setLocation($data['location'] ?? $activity->getLocation());
-        $activity->setNumberMonitors($data['numberMonitors'] ?? $activity->getNumberMonitors());
-        $activity->setActivityTypeId($data['activityTypeId'] ?? $activity->getActivityTypeId());
+        try {
+            $activityType = $this->entityManager->getRepository(ActivityType::class)
+                ->find($data['activityTypeId'] ?? null);
 
-        // Validar los datos actualizados
-        $errors = $validator->validate($activity);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = [
-                    'field' => $error->getPropertyPath(),
-                    'message' => $error->getMessage(),
-                ];
+            if (!$activityType) {
+                return $this->json(['error' => 'Activity type not found.'], 404);
             }
-            return $this->json(['errors' => $errorMessages], 400);
+
+            $monitors = $this->entityManager->getRepository(Monitor::class)
+                ->findBy(['id' => $data['monitorIds'] ?? []]);
+
+            if (count($monitors) < $activityType->getNumberMonitors()) {
+                return $this->json(['error' => 'Not enough monitors assigned for this activity type.'], 400);
+            }
+
+            $dateStart = \DateTime::createFromFormat('Y-m-d\TH:i:s', $data['dateStart']);
+            if (!$dateStart) {
+                return $this->json(['error' => 'Invalid date format. Use format: YYYY-MM-DDTHH:MM:SS.'], 400);
+            }
+
+            $dateEnd = (clone $dateStart)->modify('+90 minutes');
+
+            $activity->setActivityType($activityType);
+            $activity->setDateStart($dateStart);
+            $activity->setDateEnd($dateEnd);
+
+            foreach ($monitors as $monitor) {
+                $activity->createMonitor($monitor);
+            }
+
+            $this->activityService->updateActivity($activity);
+
+            return $this->json($this->mapEntityToDTO($activity));
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
         }
-
-        // Guardar los cambios
-        $this->activityService->updateActivity($activity);
-
-        return $this->json($activity);
     }
 
     #[Route('/activities/{id}', methods: ['DELETE'])]
     public function deleteActivity(int $id): JsonResponse
     {
-        // Buscar la actividad existente
         $activity = $this->activityService->getActivityById($id);
         if (!$activity) {
             return $this->json(['error' => 'Activity not found'], 404);
         }
 
-        // Eliminar la actividad
         $this->activityService->deleteActivity($activity);
 
         return $this->json(['message' => 'Activity deleted successfully'], 204);
+    }
+
+    private function mapEntityToDTO(Activity $activity): ActivityDTO
+    {
+        $activityTypeDTO = new ActivityTypeDTO(
+            $activity->getActivityType()->getId(),
+            $activity->getActivityType()->getName(),
+            $activity->getActivityType()->getNumberMonitors()
+        );
+
+        $monitorIds = array_map(
+            fn($activityMonitor) => $activityMonitor->getMonitor()->getId(),
+            $activity->getActivityid()->toArray()
+        );
+
+        return new ActivityDTO(
+            $activity->getId(),
+            $activity->getActivityType()->getName(),
+            $activity->getDateStart(),
+            $activity->getDateEnd(),
+            $activityTypeDTO,
+            $monitorIds
+        );
     }
 }

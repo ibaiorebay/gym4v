@@ -4,7 +4,7 @@ namespace app\Model;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class MonitorDTO
+class MonitorNewDTO
 {
     public function __construct(
         #[Assert\NotBlank]
