@@ -6,6 +6,7 @@ use App\Repository\MonitorRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: MonitorRepository::class)]
 class Monitor
@@ -13,18 +14,23 @@ class Monitor
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['monitor:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['monitor:read'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['monitor:read'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['monitor:read'])]
     private ?string $phone = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['monitor:read'])]
     private ?string $photo = null;
 
     /**

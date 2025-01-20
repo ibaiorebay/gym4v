@@ -28,8 +28,9 @@ class Activity
     /**
      * @var Collection<int, ActivityMonitor>
      */
-    #[ORM\OneToMany(targetEntity: ActivityMonitor::class, mappedBy: 'activity')]
+    #[ORM\OneToMany(targetEntity: ActivityMonitor::class, mappedBy: 'activity', cascade: ['remove'])]
     private Collection $activityid;
+
 
     public function __construct()
     {

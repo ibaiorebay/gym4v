@@ -1,7 +1,7 @@
 <?php
 
-namespace app\Model;
-use app\Model\ActivityTypeDTO;
+namespace App\Models;
+use App\Models\ActivityTypeDTO;
 
 class ActivityDTO
 {

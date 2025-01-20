@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Model;
+namespace App\Models;
 
 class ActivityTypeDTO
 {

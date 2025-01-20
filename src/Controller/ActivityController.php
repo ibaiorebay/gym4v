@@ -9,8 +9,8 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use App\Model\ActivityDTO;
-use App\Model\ActivityTypeDTO;
+use App\Models\ActivityDTO;
+use App\Models\ActivityTypeDTO;
 use App\Entity\Activity;
 use App\Entity\ActivityType;
 use App\Entity\Monitor;
@@ -43,6 +43,24 @@ class ActivityController extends AbstractController
             $activityDTOs = array_map([$this, 'mapEntityToDTO'], $activities);
 
             return $this->json($activityDTOs);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
+        }
+    }
+
+    #[Route('/activities/{id}', methods: ['GET'])]
+    public function getAllActivitiesById(int $id): JsonResponse
+    {
+        try {
+            $activity = $this->activityService->getActivityById($id);
+
+            if (!$activity) {
+                return $this->json(['error' => 'Activity not found'], 404);
+            }
+
+            $activityDTO = $this->mapEntityToDTO($activity);
+
+            return $this->json($activityDTO);
         } catch (\Exception $e) {
             return $this->json(['error' => 'An error occurred: ' . $e->getMessage()], 500);
         }

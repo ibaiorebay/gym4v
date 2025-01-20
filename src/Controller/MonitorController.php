@@ -10,23 +10,21 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use App\Model\MonitorDTO;
+use app\Models\MonitorDTO;
 use App\Entity\Monitor;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class MonitorController extends AbstractController
 {
-    public function __construct(private LoggerInterface $logger, private MonitorService $monitorService)
-    {}
+    public function __construct(private LoggerInterface $logger, private MonitorService $monitorService) {}
 
-    #[Route('/monitor', name: 'app_monitor')]
+    #[Route('/monitors', name: 'app_monitor')]
     public function GetAllMonitor(): Response
     {
-        return $this->json($this->monitorService->getAllMonitors());
+        return $this->json($this->monitorService->getAllMonitors(), context: ['groups' => ['monitor:read']]);
     }
-
-    #[Route('/monitor', name: 'post_monitor', methods:['POST'], format: 'json')]
+    #[Route('/monitors', name: 'post_monitor', methods: ['POST'], format: 'json')]
     public function newMonitors(#[MapRequestPayload(
         acceptFormat: 'json',
         validationFailedStatusCode: Response::HTTP_NOT_FOUND
@@ -37,7 +35,6 @@ class MonitorController extends AbstractController
 
         //Contesto
         return $this->json($monitorDto);
-        
     }
 
     #[Route('/monitors/{id}', methods: ['PUT'])]

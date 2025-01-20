@@ -1,10 +1,14 @@
 nelmio_cors:
     defaults:
-        origin_regex: true
-        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
-        allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
-        allow_headers: ['Content-Type', 'Authorization']
-        expose_headers: ['Link']
-        max_age: 3600
+        allow_credentials: true
+        allow_origin: ['http://localhost:4200'] # Dirección del frontend
+        allow_headers: ['Content-Type', 'Authorization'] # Encabezados permitidos
+        expose_headers: [] # Si necesitas exponer algún encabezado adicional, agrégalo aquí
+        allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] # Métodos HTTP permitidos
+        max_age: 3600 # Tiempo de cacheo de la política CORS en el navegador
     paths:
-        '^/': null
+        '^/api/': # Aplicar estas reglas a las rutas que comiencen con /api/
+            allow_origin: ['http://localhost:4200'] # Dirección del frontend
+            allow_headers: ['Content-Type', 'Authorization']
+            allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+            max_age: 3600

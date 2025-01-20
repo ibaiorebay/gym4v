@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Symfony\Component\Validator\Constraints as Assert;
 
-class ActivityDTO
+class ActivityNewDTO
 {
     #[Assert\NotBlank]
     #[Assert\Positive]

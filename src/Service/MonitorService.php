@@ -2,8 +2,8 @@
 
 namespace App\Service;
 
-use app\Model\MonitorDTO as ModelMonitorDTO;
 use App\Models\MonitorDTO;
+use App\Entity\Monitor;  // Importa la entidad Monitor
 use Doctrine\ORM\EntityManagerInterface;
 
 class MonitorService
@@ -17,30 +17,46 @@ class MonitorService
 
     public function getAllMonitors(): array
     {
-        return $this->entityManager->getRepository(ModelMonitorDTO::class)->findAll();
+        // Usamos la entidad Monitor para interactuar con la base de datos
+        return $this->entityManager->getRepository(Monitor::class)->findAll();
     }
 
-    public function getMonitorById(int $id): ?ModelMonitorDTO
+    public function getMonitorById(int $id): ?Monitor
     {
-        return $this->entityManager->getRepository(ModelMonitorDTO::class)->find($id);
+        return $this->entityManager->getRepository(Monitor::class)->find($id);
     }
 
-    public function createMonitor(ModelMonitorDTO $monitor): ModelMonitorDTO
+    public function createMonitor(MonitorDTO $monitorDTO): Monitor
     {
+        // Aquí transformamos el DTO a la entidad Monitor antes de persistirla
+        $monitor = new Monitor();
+        $monitor->setName($monitorDTO->getName());
+        // Mapear otros datos del DTO a la entidad Monitor...
+
         $this->entityManager->persist($monitor);
         $this->entityManager->flush();
         return $monitor;
     }
 
-    public function updateMonitor(ModelMonitorDTO $monitor): ModelMonitorDTO
+    public function updateMonitor(Monitor $monitor): Monitor
     {
-        $this->entityManager->flush();
+        $monitor = $this->entityManager->getRepository(Monitor::class)->find($monitor->getId());
+        if ($monitor) {
+            $monitor->setName($monitor->getName());
+            // Mapear otros campos del DTO a la entidad Monitor...
+
+            $this->entityManager->flush();
+        }
         return $monitor;
     }
 
-    public function deleteMonitor(ModelMonitorDTO $monitor): void
+    public function deleteMonitor(Monitor $monitor): void
     {
-        $this->entityManager->remove($monitor);
-        $this->entityManager->flush();
+        $monitor = $this->entityManager->getRepository(Monitor::class)->find($monitor->getId());
+        if ($monitor) {
+            $this->entityManager->remove($monitor);
+            $this->entityManager->flush();
+        }
     }
 }
+
